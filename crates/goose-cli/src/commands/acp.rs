@@ -11,7 +11,7 @@ use goose::mcp_utils::ToolResult;
 use goose::providers::create;
 use goose::session::session_manager::SessionType;
 use goose::session::SessionManager;
-use rmcp::model::{Content, RawContent, ResourceContents};
+use rmcp::model::{Content, RawContent, ResourceContents, Role};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::sync::Arc;
@@ -568,7 +568,7 @@ impl acp::Agent for GooseAcpAgent {
 
         // Advertise Goose's capabilities
         let agent_capabilities = acp::AgentCapabilities {
-            load_session: false, // TODO: Implement session persistence
+            load_session: true, // Session persistence is now supported
             prompt_capabilities: acp::PromptCapabilities {
                 image: true,            // Goose supports image inputs via providers
                 audio: false,           // TODO: Add audio support when providers support it
@@ -636,19 +636,76 @@ impl acp::Agent for GooseAcpAgent {
         args: acp::LoadSessionRequest,
     ) -> Result<acp::LoadSessionResponse, acp::Error> {
         info!("ACP: Received load session request {:?}", args);
-        // For now, will start a new session. We could use goose session storage as an enhancement
-        // we would need to map ACP session IDs to goose session ids (which by default are auto generated)
-        // normal goose session restore in CLI doesn't load conversation visually.
-        //
-        // Example flow:
-        // - Load session file by session_id (might need to map ACP session IDs to Goose session paths)
-        // - For each message in history:
-        //   - If user message: send user_message_chunk notification
-        //   - If assistant message: send agent_message_chunk notification
-        //   - If tool calls/responses: send appropriate notifications
 
-        // For now, we don't support loading previous sessions
-        Err(acp::Error::method_not_found())
+        let session_id = args.session_id.0.to_string();
+
+        // Load the session from storage
+        let stored_session = SessionManager::get_session(&session_id, true)
+            .await
+            .map_err(|e| {
+                error!("Failed to load session {}: {}", session_id, e);
+                acp::Error::invalid_params()
+            })?;
+
+        let conversation = stored_session.conversation.ok_or_else(|| {
+            error!("Session {} has no conversation history", session_id);
+            acp::Error::invalid_params()
+        })?;
+
+        // Create a new GooseAcpSession with the loaded conversation
+        let mut goose_session = GooseAcpSession {
+            messages: conversation.clone(),
+            tool_call_ids: HashMap::new(),
+            tool_requests: HashMap::new(),
+            cancel_token: None,
+        };
+
+        // Send notifications for each message in the conversation history
+        for message in conversation.messages() {
+            match message.role {
+                Role::User => {
+                    // Send user message chunks
+                    for content_item in &message.content {
+                        if let MessageContent::Text(text) = content_item {
+                            let (tx, rx) = oneshot::channel();
+                            self.session_update_tx
+                                .send((
+                                    SessionNotification {
+                                        session_id: args.session_id.clone(),
+                                        update: acp::SessionUpdate::UserMessageChunk {
+                                            content: text.text.clone().into(),
+                                        },
+                                        meta: None,
+                                    },
+                                    tx,
+                                ))
+                                .map_err(|_| acp::Error::internal_error())?;
+                            rx.await.map_err(|_| acp::Error::internal_error())?;
+                        }
+                    }
+                }
+                Role::Assistant => {
+                    // Send agent message chunks and handle tool calls
+                    for content_item in &message.content {
+                        self.handle_message_content(
+                            content_item,
+                            &args.session_id,
+                            &mut goose_session,
+                        )
+                        .await?;
+                    }
+                }
+            }
+        }
+
+        // Store the session in our active sessions map
+        let mut sessions = self.sessions.lock().await;
+        sessions.insert(session_id, goose_session);
+
+        Ok(acp::LoadSessionResponse {
+            modes: None,
+            meta: None,
+        })
     }
 
     async fn prompt(&self, args: acp::PromptRequest) -> Result<acp::PromptResponse, acp::Error> {
