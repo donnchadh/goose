@@ -2105,14 +2105,15 @@
   "components": {
     "schemas": {
       "ActionRequired": {
-        "allOf": [
-          {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
             "$ref": "#/components/schemas/ActionRequiredData"
-          },
-          {
-            "type": "object"
           }
-        ]
+        }
       },
       "ActionRequiredData": {
         "oneOf": [

@@ -12,7 +12,7 @@ const isUserMessage = (message: Message): boolean => {
   if (message.role === 'assistant') {
     return false;
   }
-  return !message.content.every((c) => c.type === 'toolConfirmationRequest');
+  return !message.content.every((c) => c.type === 'actionRequired');
 };
 
 interface UseChatEngineProps {
@@ -315,20 +315,21 @@ export const useChatEngine = ({
     } else if (!isUserMessage(lastMessage)) {
       const toolRequests: [string, Record<string, unknown>][] = lastMessage.content
         .filter(
-          (content) => content.type === 'toolRequest' || content.type === 'toolConfirmationRequest'
+          (content) => content.type === 'toolRequest' || content.type === 'actionRequired'
         )
         .map((content) => {
+          console.log('content', content);
           if (content.type === 'toolRequest') {
             return [content.id, content.toolCall];
           } else {
             const toolCall = {
               status: 'success',
               value: {
-                name: content.toolName,
-                arguments: content.arguments,
+                name: content.data.tool_name,
+                arguments: content.data.arguments,
               },
             };
-            return [content.id, toolCall];
+            return [content.data.id, toolCall];
           }
         });
 

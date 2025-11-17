@@ -105,7 +105,6 @@ pub enum ActionRequiredData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ActionRequired {
-    #[serde(flatten)]
     pub data: ActionRequiredData,
 }
 

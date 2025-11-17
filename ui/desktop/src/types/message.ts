@@ -63,6 +63,8 @@ export function getToolResponses(message: Message): (ToolResponse & { type: 'too
 export function getToolConfirmationContent(
   message: Message
 ): (ActionRequired & { type: 'actionRequired' }) | undefined {
+  console.log(message.content);
+
   return message.content.find(
     (content): content is ActionRequired & { type: 'actionRequired' } =>
       content.type === 'actionRequired' && content.actionType === 'toolConfirmation'

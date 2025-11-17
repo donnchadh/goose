@@ -4,8 +4,8 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
-export type ActionRequired = ActionRequiredData & {
-    [key: string]: unknown;
+export type ActionRequired = {
+    data: ActionRequiredData;
 };
 
 export type ActionRequiredData = {

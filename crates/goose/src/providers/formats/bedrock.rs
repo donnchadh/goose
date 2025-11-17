@@ -38,7 +38,6 @@ pub fn to_bedrock_message_content(content: &MessageContent) -> Result<bedrock::C
             bedrock::ContentBlock::Text("".to_string())
         }
         MessageContent::ActionRequired(_action_required) => {
-            // Skip action required messages - they're for UI only
             bedrock::ContentBlock::Text("".to_string())
         }
         MessageContent::Image(image) => {
