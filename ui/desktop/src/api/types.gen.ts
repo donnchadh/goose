@@ -4,6 +4,18 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type ActionRequired = ActionRequiredData & {
+    [key: string]: unknown;
+};
+
+export type ActionRequiredData = {
+    actionType: 'toolConfirmation';
+    arguments: JsonObject;
+    id: string;
+    prompt?: string | null;
+    tool_name: string;
+};
+
 export type AddExtensionRequest = {
     config: ExtensionConfig;
     session_id: string;
@@ -72,6 +84,13 @@ export type ConfigResponse = {
     config: {
         [key: string]: unknown;
     };
+};
+
+export type ConfirmToolActionRequest = {
+    action: string;
+    id: string;
+    principalType?: PrincipalType;
+    sessionId: string;
 };
 
 export type Content = RawTextContent | RawImageContent | RawEmbeddedResource | RawAudioContent | RawResource;
@@ -358,6 +377,8 @@ export type MessageContent = (TextContent & {
     type: 'toolResponse';
 }) | (ToolConfirmationRequest & {
     type: 'toolConfirmationRequest';
+}) | (ActionRequired & {
+    type: 'actionRequired';
 }) | (FrontendToolRequest & {
     type: 'frontendToolRequest';
 }) | (ThinkingContent & {
@@ -446,13 +467,6 @@ export type ParseRecipeRequest = {
 
 export type ParseRecipeResponse = {
     recipe: Recipe;
-};
-
-export type PermissionConfirmationRequest = {
-    action: string;
-    id: string;
-    principal_type?: PrincipalType;
-    session_id: string;
 };
 
 /**
@@ -927,6 +941,31 @@ export type UpsertConfigQuery = {
 
 export type UpsertPermissionsQuery = {
     tool_permissions: Array<ToolPermission>;
+};
+
+export type ConfirmToolActionData = {
+    body: ConfirmToolActionRequest;
+    path?: never;
+    query?: never;
+    url: '/action-required/tool-confirmation';
+};
+
+export type ConfirmToolActionErrors = {
+    /**
+     * Unauthorized - invalid secret key
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type ConfirmToolActionResponses = {
+    /**
+     * Tool confirmation action is confirmed
+     */
+    200: unknown;
 };
 
 export type AgentAddExtensionData = {
@@ -1648,31 +1687,6 @@ export type ValidateConfigResponses = {
 };
 
 export type ValidateConfigResponse = ValidateConfigResponses[keyof ValidateConfigResponses];
-
-export type ConfirmPermissionData = {
-    body: PermissionConfirmationRequest;
-    path?: never;
-    query?: never;
-    url: '/confirm';
-};
-
-export type ConfirmPermissionErrors = {
-    /**
-     * Unauthorized - invalid secret key
-     */
-    401: unknown;
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
-export type ConfirmPermissionResponses = {
-    /**
-     * Permission action is confirmed
-     */
-    200: unknown;
-};
 
 export type DiagnosticsData = {
     body?: never;

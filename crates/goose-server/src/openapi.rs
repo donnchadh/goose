@@ -18,9 +18,9 @@ use goose::config::declarative_providers::{
     DeclarativeProviderConfig, LoadedProvider, ProviderEngine,
 };
 use goose::conversation::message::{
-    FrontendToolRequest, Message, MessageContent, MessageMetadata, RedactedThinkingContent,
-    SystemNotificationContent, SystemNotificationType, ThinkingContent, TokenState,
-    ToolConfirmationRequest, ToolRequest, ToolResponse,
+    ActionRequired, ActionRequiredData, FrontendToolRequest, Message, MessageContent,
+    MessageMetadata, RedactedThinkingContent, SystemNotificationContent, SystemNotificationType,
+    ThinkingContent, TokenState, ToolConfirmationRequest, ToolRequest, ToolResponse,
 };
 
 use crate::routes::reply::MessageEvent;
@@ -398,7 +398,7 @@ derive_utoipa!(Icon as IconSchema);
         super::routes::config_management::UpdateCustomProviderRequest,
         super::routes::config_management::CheckProviderRequest,
         super::routes::config_management::SetProviderRequest,
-        super::routes::action_required::ToolConfirmationRequest,
+        super::routes::action_required::ConfirmToolActionRequest,
         super::routes::reply::ChatRequest,
         super::routes::session::ImportSessionRequest,
         super::routes::session::SessionListResponse,
@@ -422,6 +422,8 @@ derive_utoipa!(Icon as IconSchema);
         ToolResponse,
         ToolRequest,
         ToolConfirmationRequest,
+        ActionRequired,
+        ActionRequiredData,
         ThinkingContent,
         RedactedThinkingContent,
         FrontendToolRequest,

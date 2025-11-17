@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ToolConfirmationRequest {
+pub struct ConfirmToolActionRequest {
     id: String,
     #[serde(default = "default_principal_type")]
     principal_type: PrincipalType,
@@ -24,7 +24,7 @@ fn default_principal_type() -> PrincipalType {
 #[utoipa::path(
     post,
     path = "/action-required/tool-confirmation",
-    request_body = ToolConfirmationRequest,
+    request_body = ConfirmToolActionRequest,
     responses(
         (status = 200, description = "Tool confirmation action is confirmed", body = Value),
         (status = 401, description = "Unauthorized - invalid secret key"),
@@ -33,7 +33,7 @@ fn default_principal_type() -> PrincipalType {
 )]
 pub async fn confirm_tool_action(
     State(state): State<Arc<AppState>>,
-    Json(request): Json<ToolConfirmationRequest>,
+    Json(request): Json<ConfirmToolActionRequest>,
 ) -> Result<Json<Value>, StatusCode> {
     let agent = state.get_agent_for_route(request.session_id).await?;
     let permission = match request.action.as_str() {
@@ -85,7 +85,7 @@ mod tests {
                 .header("content-type", "application/json")
                 .header("x-secret-key", "test-secret")
                 .body(Body::from(
-                    serde_json::to_string(&ToolConfirmationRequest {
+                    serde_json::to_string(&ConfirmToolActionRequest {
                         id: "test-id".to_string(),
                         principal_type: PrincipalType::Tool,
                         action: "allow_once".to_string(),

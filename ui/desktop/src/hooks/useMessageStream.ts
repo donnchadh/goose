@@ -318,7 +318,9 @@ export function useMessageStream({
 
                     // Check if this message contains tool confirmation requests
                     const hasToolConfirmation = newMessage.content.some(
-                      (content) => content.type === 'toolConfirmationRequest'
+                      (content) =>
+                        content.type === 'actionRequired' &&
+                        content.actionType === 'toolConfirmation'
                     );
 
                     if (hasToolConfirmation) {
@@ -499,7 +501,8 @@ export function useMessageStream({
         const currentMessages = messagesRef.current;
         const lastMessage = currentMessages[currentMessages.length - 1];
         const hasPendingToolConfirmation = lastMessage?.content.some(
-          (content) => content.type === 'toolConfirmationRequest'
+          (content) =>
+            content.type === 'actionRequired' && content.actionType === 'toolConfirmation'
         );
 
         if (hasPendingToolConfirmation) {
