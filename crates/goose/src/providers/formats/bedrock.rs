@@ -37,6 +37,10 @@ pub fn to_bedrock_message_content(content: &MessageContent) -> Result<bedrock::C
         MessageContent::ToolConfirmationRequest(_tool_confirmation_request) => {
             bedrock::ContentBlock::Text("".to_string())
         }
+        MessageContent::ActionRequired(_action_required) => {
+            // Skip action required messages - they're for UI only
+            bedrock::ContentBlock::Text("".to_string())
+        }
         MessageContent::Image(image) => {
             bedrock::ContentBlock::Image(to_bedrock_image(&image.data, &image.mime_type)?)
         }

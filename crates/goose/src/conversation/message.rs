@@ -92,6 +92,24 @@ pub struct ToolConfirmationRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "actionType", rename_all = "camelCase")]
+pub enum ActionRequiredData {
+    ToolConfirmation {
+        id: String,
+        tool_name: String,
+        arguments: JsonObject,
+        prompt: Option<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ActionRequired {
+    #[serde(flatten)]
+    pub data: ActionRequiredData,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ThinkingContent {
     pub thinking: String,
     pub signature: String,
@@ -134,6 +152,7 @@ pub enum MessageContent {
     ToolRequest(ToolRequest),
     ToolResponse(ToolResponse),
     ToolConfirmationRequest(ToolConfirmationRequest),
+    ActionRequired(ActionRequired),
     FrontendToolRequest(FrontendToolRequest),
     Thinking(ThinkingContent),
     RedactedThinking(RedactedThinkingContent),
@@ -159,6 +178,11 @@ impl fmt::Display for MessageContent {
             MessageContent::ToolConfirmationRequest(r) => {
                 write!(f, "[ToolConfirmationRequest: {}]", r.tool_name)
             }
+            MessageContent::ActionRequired(a) => match &a.data {
+                ActionRequiredData::ToolConfirmation { tool_name, .. } => {
+                    write!(f, "[ActionRequired: ToolConfirmation for {}]", tool_name)
+                }
+            },
             MessageContent::FrontendToolRequest(r) => match &r.tool_call {
                 Ok(tool_call) => write!(f, "[FrontendToolRequest: {}]", tool_call.name),
                 Err(e) => write!(f, "[FrontendToolRequest: Error: {}]", e),
@@ -283,6 +307,14 @@ impl MessageContent {
     pub fn as_tool_confirmation_request(&self) -> Option<&ToolConfirmationRequest> {
         if let MessageContent::ToolConfirmationRequest(ref tool_confirmation_request) = self {
             Some(tool_confirmation_request)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_action_required(&self) -> Option<&ActionRequired> {
+        if let MessageContent::ActionRequired(ref action_required) = self {
+            Some(action_required)
         } else {
             None
         }
